@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseMissingNo
+extends ASE.Chunk
 
 ## You should never encounter this class in the wild, but if the parser
 ## encounters something it doesn't understand it stores the raw bytes.
@@ -18,7 +17,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	if not _stream:
-		_stream = AseDataStream.new()
+		_stream = ASE.DataStream.new()
 	_data.clear()
 	_stream.data_array = _data
 	_stream.put_DWORD(0)

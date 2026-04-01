@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseTileset
+extends ASE.Chunk
 
 enum TileFlip {
 	NONE = 0,
@@ -22,7 +21,7 @@ enum TileFlip {
 @export var empty_tile_value: int = 0
 @export var is_external: bool = false
 @export var external_file_path: String = ""
-@export var external_tileset: AseTileset = null
+@export var external_tileset: ASE.TileSetChunk = null
 @export var tile_user_data: Dictionary = {}
 @export_storage var _compressed_data: PackedByteArray
 @export_storage var _original_tile_data: PackedByteArray = []
@@ -43,7 +42,7 @@ func _parse_chunk() -> Error:
 	_stream.get_BYTES(14)
 	name = _stream.get_STRING()
 	
-	AseLogger.debug("Parsed tileset '%s' id=%d tiles=%d" % [name, tileset_id, num_tiles])
+	ASE.Log.debug("Parsed tileset '%s' id=%d tiles=%d" % [name, tileset_id, num_tiles])
 	
 	if flags & 4:
 		empty_tile_value = 0
@@ -65,7 +64,7 @@ func _parse_chunk() -> Error:
 	
 	return OK
 
-func resolve_external_tileset(external_files: AseExternalFiles, base_path: String) -> Error:
+func resolve_external_tileset(external_files: ASE.ExternalFiles, base_path: String) -> Error:
 	if not is_external:
 		return OK
 	
@@ -76,24 +75,24 @@ func resolve_external_tileset(external_files: AseExternalFiles, base_path: Strin
 			break
 	
 	if not external_file:
-		AseLogger.error("External file not found for tileset %d" % tileset_id)
+		ASE.Log.error("External file not found for tileset %d" % tileset_id)
 		return ERR_FILE_NOT_FOUND
 	
 	external_file_path = _resolve_path(base_path, external_file.filename)
-	AseLogger.debug("Loading external tileset from: %s" % external_file_path)
+	ASE.Log.debug("Loading external tileset from: %s" % external_file_path)
 	
-	var parser = AseParser.new()
+	var parser = ASE.Parser.new()
 	var result = parser.load_ase(external_file_path)
 	
 	if result.keys()[0] != OK:
-		AseLogger.error("Failed to load external tileset: %s" % external_file_path)
+		ASE.Log.error("Failed to load external tileset: %s" % external_file_path)
 		return result.keys()[0]
 	
 	var external_ase = result[result.keys()[0]]
 	
 	for frame in external_ase.frames:
 		for chunk in frame.chunks:
-			if chunk is AseTileset and chunk.tileset_id == external_tileset_id:
+			if chunk is ASE.TileSetChunk and chunk.tileset_id == external_tileset_id:
 				external_tileset = chunk
 				tile_width = external_tileset.tile_width
 				tile_height = external_tileset.tile_height
@@ -102,7 +101,7 @@ func resolve_external_tileset(external_files: AseExternalFiles, base_path: Strin
 				base_index = external_tileset.base_index
 				return OK
 	
-	AseLogger.error("External tileset ID %d not found in %s" % [external_tileset_id, external_file_path])
+	ASE.Log.error("External tileset ID %d not found in %s" % [external_tileset_id, external_file_path])
 	return ERR_FILE_CORRUPT
 
 func _resolve_path(base_path: String, relative_path: String) -> String:
@@ -115,7 +114,7 @@ func _resolve_path(base_path: String, relative_path: String) -> String:
 		var alt_path = base_dir.path_join(relative_path.get_file())
 		if FileAccess.file_exists(alt_path):
 			return alt_path
-		AseLogger.warning("External file not found: %s" % relative_path)
+		ASE.Log.warning("External file not found: %s" % relative_path)
 	
 	return full_path
 
@@ -170,17 +169,17 @@ func _diagonal_flip(image: Image) -> Image:
 			result.set_pixel(y, x, image.get_pixel(x, y))
 	return result
 
-func add_tile_user_data(tile_index: int, p_user_data: AseUserData) -> void:
+func add_tile_user_data(tile_index: int, p_user_data: ASE.UserDataChunk) -> void:
 	tile_user_data[tile_index] = p_user_data
 
-func get_tile_user_data(tile_index: int) -> AseUserData:
+func get_tile_user_data(tile_index: int) -> ASE.UserDataChunk:
 	return tile_user_data.get(tile_index)
 
 func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var data = PackedByteArray()
 	stream.data_array = data
 	

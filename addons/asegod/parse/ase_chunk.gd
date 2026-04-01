@@ -1,6 +1,5 @@
 @abstract
-extends AseElement
-class_name AseChunk
+extends ASE.Component
 
 enum ChunkType {
 	INVALID = -1,
@@ -20,12 +19,12 @@ enum ChunkType {
 	TILESET = 0x2023,
 }
 
-@export_custom(AseFile._H, "", AseFile._U) var chunk_size: int = 0
-@export_custom(AseFile._H, "", AseFile._U) var chunk_type: ChunkType = ChunkType.INVALID
+@export_custom(ASE.File._H, "", ASE.File._U) var chunk_size: int = 0
+@export_custom(ASE.File._H, "", ASE.File._U) var chunk_type: ChunkType = ChunkType.INVALID
 
-var _stream: AseDataStream
+var _stream: ASE.DataStream
 var _cache: Dictionary = {}
-@export var user_data: AseUserData = null
+@export var user_data: ASE.UserDataChunk = null
 @export_storage var _parsed: bool = false
 @export_storage var _chunk_data_size: int = 0
 
@@ -41,7 +40,7 @@ func parse() -> Error:
 		error = ERR_INVALID_DATA
 		return error
 	
-	_stream = AseDataStream.new()
+	_stream = ASE.DataStream.new()
 	_stream.data_array = _data
 	error = _validate_data()
 	
@@ -59,5 +58,5 @@ func _parse_chunk() -> Error
 @abstract
 func _serialize_chunk() -> Dictionary[Error, PackedByteArray]
 
-func attach_user_data(data_chunk: AseUserData) -> void:
+func attach_user_data(data_chunk: ASE.UserDataChunk) -> void:
 	user_data = data_chunk

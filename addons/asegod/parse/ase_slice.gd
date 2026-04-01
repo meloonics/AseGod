@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseSlice
+extends ASE.Chunk
 
 class SliceKey:
 	var frame: int
@@ -26,7 +25,7 @@ func _parse_chunk() -> Error:
 	_stream.get_DWORD()
 	name = _stream.get_STRING()
 	
-	AseLogger.debug("Parsing slice '%s' with %d keys" % [name, n_keys])
+	ASE.Log.debug("Parsing slice '%s' with %d keys" % [name, n_keys])
 	
 	for i in n_keys:
 		var frame = _stream.get_DWORD()
@@ -54,7 +53,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	_data.clear()
 	stream.data_array = _data
 	stream.put_DWORD(0)

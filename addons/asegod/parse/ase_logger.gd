@@ -1,9 +1,9 @@
-class_name AseLogger
 extends RefCounted
 
 ## Static Helper class for debugging and development. 
-#TODO: See if this class can either be removed or used more diligently
+# TODO: See if this class can either be removed or used more diligently
 # TODO: Make functions variadic
+# TODO: Add .log files in res://addons/asegod/debug with log-rotation
 enum Level {
 	ERROR = 0,
 	WARNING = 1,

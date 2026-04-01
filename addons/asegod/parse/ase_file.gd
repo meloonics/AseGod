@@ -1,6 +1,6 @@
 #@tool
 extends Resource
-class_name AseFile
+
 # TODO: make resource accustomed to indexed sprites specifically
 enum ColorDepth {RGBA = 32, GRAYSCALE = 16, INDEXED = 8}
 enum TileFormat {BYTE = 1, WORD = 2, DWORD = 4}
@@ -8,7 +8,7 @@ enum HeaderFlags {OPACITY_VALID = 1, VALID_FOR_GROUP = 2, HAS_UUID = 4}
 
 const HEADER_SIZE_BYTES: int = 128
 const MAGIC_NUMBER: int = 0xA5E0
-const INVALID: AseFile = null
+const INVALID: ASE.File = null
 
 # export shorthands
 const _H: PropertyHint = PROPERTY_HINT_NONE
@@ -24,7 +24,7 @@ const _U: int = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY
 @export_custom(_H, "", _U) var n_colors: int = 0
 @export_custom(PROPERTY_HINT_LINK, "") var pixel_dimensions: Vector2i
 @export var grid: Rect2i
-@export var frames: Array[AseFrame]
+@export var frames: Array[ASE.Frame]
 @export_storage var _timestamp: int:
 	set(value):
 		_timestamp = value
@@ -69,7 +69,7 @@ func _init(
 	flags = p_flags
 	_d_speed = p_speed
 	if p_zero != 0:
-		AseLogger.warning("Unexpected Non-Zero Bytes")
+		ASE.Log.warning("Unexpected Non-Zero Bytes")
 		
 	_transparent_index = p_palette_entry
 	n_colors = p_n_colors
@@ -78,11 +78,11 @@ func _init(
 	error = OK
 	
 
-func add_layer(layer: AseLayer, index: int) -> void:
+func add_layer(layer: ASE.Layer, index: int) -> void:
 	layers_by_index[index] = layer
 
 func serialize_to_ase() -> PackedByteArray:
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	
 	# Write header
 	stream.put_DWORD(0)
@@ -121,19 +121,19 @@ func serialize_to_ase() -> PackedByteArray:
 	
 	return stream.get_data_array()
 
-func _serialize_frame(frame: AseFrame) -> PackedByteArray:
-	AseLogger.debug("Serializing frame with %d chunks" % frame.chunks.size())
+func _serialize_frame(frame: ASE.Frame) -> PackedByteArray:
+	ASE.Log.debug("Serializing frame with %d chunks" % frame.chunks.size())
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var chunks_data = PackedByteArray()
 	
 	for chunk in frame.chunks:
-		if chunk is AseChunk:
+		if chunk is ASE.Chunk:
 			var chunk_result = chunk._serialize_chunk()
 			if chunk_result.keys()[0] == OK:
 				chunks_data += chunk_result[chunk_result.keys()[0]]
 		
-		if chunk is AseTags:
+		if chunk is ASE.TagsChunk:
 			for tag in chunk.tags:
 				if tag.user_data and tag.user_data._serialize_chunk().keys()[0] == OK:
 					chunks_data += tag.user_data._serialize_chunk()[OK]
@@ -141,7 +141,7 @@ func _serialize_frame(frame: AseFrame) -> PackedByteArray:
 	# Write header
 	var header_start = stream.get_position()
 	stream.put_DWORD(16 + chunks_data.size())
-	stream.put_WORD(AseFrame.MAGIC_NUMBER)
+	stream.put_WORD(ASE.Frame.MAGIC_NUMBER)
 	
 	# Check if extended format needed
 	var uses_extended = frame._original_new_chunk_count >= 0xFFFF or frame.n_chunks >= 0xFFFF

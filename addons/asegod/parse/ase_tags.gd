@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseTags #TODO rename
+extends ASE.Chunk
 
 enum LoopDirection {
 	FORWARD = 0,
@@ -8,7 +7,7 @@ enum LoopDirection {
 	PING_PONG_REVERSE = 3
 }
 
-@export var tags: Array[AseTag] = []
+@export var tags: Array[ASE.Tag] = []
 
 func _init(p_data: PackedByteArray = PackedByteArray()) -> void:
 	super(p_data, ChunkType.TAGS)
@@ -29,7 +28,7 @@ func _parse_chunk() -> Error:
 		_stream.get_BYTE()  # extra byte (zero)
 		var name = _stream.get_STRING()
 		
-		tags.append(AseTag.new(from, to, dir, repeat, name, Color8(r, g, b)))
+		tags.append(ASE.Tag.new(from, to, dir, repeat, name, Color8(r, g, b)))
 	
 	return OK
 
@@ -37,9 +36,9 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	AseLogger.debug("Serializing %d tags" % tags.size())
+	ASE.Log.debug("Serializing %d tags" % tags.size())
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	_data.clear()
 	stream.data_array = _data
 	stream.put_DWORD(0)

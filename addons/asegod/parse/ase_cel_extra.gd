@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseCelExtra
+extends ASE.Chunk
 
 enum ExtraFlags {
 	PRECISE_BOUNDS = 1
@@ -27,7 +26,7 @@ func _parse_chunk() -> Error:
 func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	# header
 	_data.clear()
 	stream.data_array = _data

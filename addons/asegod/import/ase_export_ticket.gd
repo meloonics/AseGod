@@ -1,12 +1,11 @@
 @tool
 extends Resource
-class_name AseExportTicket
 
 ## Resource to store the export information for .ase(prite) files.
 ## Extend this class to create powerful custom logic for turning 
 ## Aseprite Data into Godot-Resources. 
 ## You usually find these attached in the metadata of Godot-Objects 
-## that were generated from an AseFile resource.
+## that were generated from an ASE.File resource.
 ## If this behavior is undesired, you can turn the default behavior
 ## to 'false' by calling set_attach_as_metadata_default() 
 ## somewhere during your project's initialization.
@@ -118,8 +117,8 @@ func to_dict() -> Dictionary:
 		"output_path": output_path
 	}
 
-static func from_dict(data: Dictionary) -> AseExportTicket:
-	var ticket = AseExportTicket.new()
+static func from_dict(data: Dictionary) -> ASE.ExportTicket:
+	var ticket = ASE.ExportTicket.new()
 	
 	ticket.source_path = data.get("source_path", "")
 	ticket.export_type = data.get("export_type", ExportType.RES_TEXTURE)

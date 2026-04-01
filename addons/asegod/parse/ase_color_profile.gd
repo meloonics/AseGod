@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseColorProfile
+extends ASE.Chunk
 
 enum ProfileType {
 	NONE = 0,
@@ -45,7 +44,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var data = PackedByteArray()
 	stream.data_array = data
 	

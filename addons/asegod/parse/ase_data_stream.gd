@@ -1,5 +1,4 @@
 extends StreamPeerBuffer
-class_name AseDataStream
 ## Base class for Bytecrawlers that deal with Aseprite-related files.
 ##
 ## Contains helper-functions to better visualize adherence to the specs
@@ -161,9 +160,9 @@ func put_RECT2I(value: Rect2i) -> void:
   #- **RGBA**: `BYTE[4]`, each pixel have 4 bytes in this order Red, Green, Blue, Alpha.
   #- **Grayscale**: `BYTE[2]`, each pixel have 2 bytes in the order Value, Alpha.
   #- **Indexed**: `BYTE`, each pixel uses 1 byte (the index).
-func get_PIXEL(format: AseFile.ColorDepth = AseFile.ColorDepth.RGBA) -> Color:
+func get_PIXEL(format: ASE.File.ColorDepth = ASE.File.ColorDepth.RGBA) -> Color:
 	match format:
-		AseFile.ColorDepth.INDEXED:
+		ASE.File.ColorDepth.INDEXED:
 			var index: int = get_BYTE()
 			if palette.is_empty():
 				push_error("No palette loaded for indexed image")
@@ -172,24 +171,24 @@ func get_PIXEL(format: AseFile.ColorDepth = AseFile.ColorDepth.RGBA) -> Color:
 				push_error("Index %d out of bounds (max %d)" % [index, palette.size() - 1])
 				return Color.TRANSPARENT
 			return palette[index]
-		AseFile.ColorDepth.GRAYSCALE:
+		ASE.File.ColorDepth.GRAYSCALE:
 			var value = get_BYTE()
 			var alpha = get_BYTE()
 			return Color8(value, value, value, alpha)
 		_:  # RGBA
 			return Color8(get_BYTE(), get_BYTE(), get_BYTE(), get_BYTE())
 
-func put_PIXEL(value: Color, format: AseFile.ColorDepth = AseFile.ColorDepth.RGBA) -> void:
+func put_PIXEL(value: Color, format: ASE.File.ColorDepth = ASE.File.ColorDepth.RGBA) -> void:
 	match format:
-		AseFile.ColorDepth.GRAYSCALE: #Grayscale (1 BYTE  Value, 1 BYTE Alpha)
+		ASE.File.ColorDepth.GRAYSCALE: #Grayscale (1 BYTE  Value, 1 BYTE Alpha)
 			var gray_value = (value.r8 + value.g8 + value.b8) / 3
 			put_BYTE(gray_value)
 			put_BYTE(value.a8)
-		AseFile.ColorDepth.INDEXED: #Indexed (1 BYTE for index)
+		ASE.File.ColorDepth.INDEXED: #Indexed (1 BYTE for index)
 			var idx: int = palette.find(value)
 			put_BYTE(idx)
 		_:
-			if format != AseFile.ColorDepth.RGBA:
+			if format != ASE.File.ColorDepth.RGBA:
 				error = ERR_INVALID_PARAMETER
 				push_error("Unknown image pixel format of '%s' Bytes size, using default..." % format)
 			put_BYTE(value.r8)
@@ -202,25 +201,25 @@ func put_PIXEL(value: Color, format: AseFile.ColorDepth = AseFile.ColorDepth.RGB
 #`TILE`: **Tilemaps**: Each tile can be a 8-bit (`BYTE`), 16-bit
   #(`WORD`), or 32-bit (`DWORD`) value and there are masks related to
   #the meaning of each bit.
-func get_TILE(format: AseFile.TileFormat = AseFile.TileFormat.BYTE) -> int:
+func get_TILE(format: ASE.File.TileFormat = ASE.File.TileFormat.BYTE) -> int:
 	match format:
-		AseFile.TileFormat.BYTE:
+		ASE.File.TileFormat.BYTE:
 			return get_BYTE()
-		AseFile.TileFormat.WORD:
+		ASE.File.TileFormat.WORD:
 			return get_WORD()
-		AseFile.TileFormat.DWORD:
+		ASE.File.TileFormat.DWORD:
 			return get_DWORD()
 		_:
 			push_error("Unknown TileFormat: '%s', using default instead..." % format)
 			return get_TILE()
 
-func put_TILE(value: int, format: AseFile.TileFormat = AseFile.TileFormat.BYTE) -> void:
+func put_TILE(value: int, format: ASE.File.TileFormat = ASE.File.TileFormat.BYTE) -> void:
 	match format:
-		AseFile.TileFormat.BYTE:
+		ASE.File.TileFormat.BYTE:
 			put_BYTE(value)
-		AseFile.TileFormat.WORD:
+		ASE.File.TileFormat.WORD:
 			put_WORD(value)
-		AseFile.TileFormat.DWORD:
+		ASE.File.TileFormat.DWORD:
 			put_DWORD(value)
 		_:
 			push_error("Unknown TileFormat: '%s', using default instead..." % format)

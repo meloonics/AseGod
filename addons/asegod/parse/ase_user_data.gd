@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseUserData
+extends ASE.Chunk
 
 enum Flags {
 	HAS_TEXT = 1,
@@ -71,11 +70,11 @@ func _parse_properties() -> Dictionary:
 	var n_maps = _stream.get_DWORD()
 	var result = {}
 	
-	AseLogger.debug("Parsing properties: size=%d maps=%d" % [total_size, n_maps])
+	ASE.Log.debug("Parsing properties: size=%d maps=%d" % [total_size, n_maps])
 	
 	for i in range(n_maps):
 		if _stream.get_position() - start_pos > total_size:
-			AseLogger.warning("Properties map exceeds declared size")
+			ASE.Log.warning("Properties map exceeds declared size")
 			break
 		
 		var map_key = _stream.get_DWORD()
@@ -83,7 +82,7 @@ func _parse_properties() -> Dictionary:
 		
 		for j in range(n_props):
 			if _stream.get_position() - start_pos > total_size:
-				AseLogger.warning("Properties exceed declared size")
+				ASE.Log.warning("Properties exceed declared size")
 				break
 			
 			var name = _stream.get_STRING()
@@ -117,7 +116,7 @@ func _parse_property_value(type: int):
 		UDTypeWord.NESTED: return _parse_nested_properties()
 		UDTypeWord.UUID: return _stream.get_UUID()
 		_: 
-			AseLogger.error("Unknown property type: 0x%X" % type)
+			ASE.Log.error("Unknown property type: 0x%X" % type)
 			return null
 
 func _parse_vector() -> Array:
@@ -152,7 +151,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	_data.clear()
 	stream.data_array = _data
 	stream.put_DWORD(0)
@@ -191,8 +190,8 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	
 	return {OK: stream.get_data_array()}
 
-func _serialize_properties(stream: AseDataStream) -> void:
-	var temp = AseDataStream.new()
+func _serialize_properties(stream: ASE.DataStream) -> void:
+	var temp = ASE.DataStream.new()
 	temp.put_DWORD(1)
 	temp.put_DWORD(properties.size())
 	
@@ -217,7 +216,7 @@ func _get_property_type(value) -> int:
 		TYPE_RECT2I: return UDTypeWord.RECT
 		_: return UDTypeWord.STRING
 
-func _serialize_property_value(stream: AseDataStream, type: int, value) -> void:
+func _serialize_property_value(stream: ASE.DataStream, type: int, value) -> void:
 	match type:
 		UDTypeWord.BOOL: stream.put_BYTE(1 if value else 0)
 		UDTypeWord.INT32: stream.put_LONG(value)

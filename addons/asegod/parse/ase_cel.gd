@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseCel
+extends ASE.Chunk
 
 enum CelType {
 	RAW_IMAGE = 0,
@@ -8,7 +7,7 @@ enum CelType {
 	COMPRESSED_TILEMAP = 3
 }
 
-@export var extra_data: AseCelExtra = null
+@export var extra_data: ASE.CelExtra = null
 @export var layer_index: int = 0
 @export var x: int = 0
 @export var y: int = 0
@@ -19,7 +18,7 @@ enum CelType {
 @export var cel_type: int = CelType.COMPRESSED_IMAGE
 
 @export var z_index: int = 0
-@export var color_depth: AseFile.ColorDepth = AseFile.ColorDepth.RGBA
+@export var color_depth: ASE.File.ColorDepth = ASE.File.ColorDepth.RGBA
 
 @export_storage var _compressed_data: PackedByteArray = []
 var _is_pixels_loaded: bool = false
@@ -66,14 +65,14 @@ var flip_diag_mask: int:
 		_flip_diag_mask_bytes = PackedByteArray([value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF])
 
 var tiles: PackedInt64Array = []
-@export var tileset: AseTileset = null
+@export var tileset: ASE.TileSetChunk = null
 @export_storage var _tile_data: PackedByteArray = []
 @export_storage var _original_compressed_data: PackedByteArray = []
 
-func set_tileset(p_tileset: AseTileset) -> void:
+func set_tileset(p_tileset: ASE.TileSetChunk) -> void:
 	tileset = p_tileset
 
-func _init(p_data: PackedByteArray = PackedByteArray(), p_color_depth: AseFile.ColorDepth = AseFile.ColorDepth.RGBA) -> void:
+func _init(p_data: PackedByteArray = PackedByteArray(), p_color_depth: ASE.File.ColorDepth = ASE.File.ColorDepth.RGBA) -> void:
 	color_depth = p_color_depth
 	super(p_data, ChunkType.CEL)
 
@@ -137,7 +136,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var data = PackedByteArray()
 	stream.data_array = data
 	
@@ -201,7 +200,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 
 func _parse_tiles(data: PackedByteArray) -> PackedInt64Array:
 	var _tiles = PackedInt64Array()
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	stream.set_data_array(data)
 	
 	var tile_size = max(1, bits_per_tile / 8)
@@ -229,7 +228,7 @@ func get_tile_id_with_flips(raw_tile: int) -> Dictionary:
 	}
 
 func _serialize_tiles(_tiles: PackedInt64Array) -> PackedByteArray:
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var tile_size = max(1, bits_per_tile / 8)
 	for tile in _tiles:
 		match tile_size:

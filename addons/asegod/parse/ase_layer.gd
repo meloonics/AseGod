@@ -1,5 +1,4 @@
-extends AseChunk
-class_name AseLayer
+extends ASE.Chunk
 
 #region Constants
 enum LayerFlags {
@@ -114,7 +113,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var data = PackedByteArray()
 	stream.data_array = data
 	

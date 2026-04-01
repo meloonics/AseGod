@@ -1,5 +1,5 @@
-extends AseChunk
-class_name AseExternalFiles
+extends ASE.Chunk
+
 # TODO: Test this
 class ExternalFile:
 	var entry_id: int
@@ -20,7 +20,7 @@ func _parse_chunk() -> Error:
 	var n_entries = _stream.get_DWORD()
 	_stream.get_BYTES(8)
 	
-	AseLogger.debug("Parsing %d external files" % n_entries)
+	ASE.Log.debug("Parsing %d external files" % n_entries)
 	
 	for i in n_entries:
 		var entry_id = _stream.get_DWORD()
@@ -35,7 +35,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	_data.clear()
 	stream.data_array = _data
 	stream.put_DWORD(0)

@@ -1,21 +1,20 @@
 #@tool
-extends AseDataStream
-class_name AseParser
+extends ASE.DataStream
 
 #TODO: blow this class up into tiny little bits of responsibility,
 # works for now, though
 
 signal load_progress(current_frame: int, total_frames: int)
-signal load_completed(result: AseFile)
+signal load_completed(result: ASE.File)
 signal load_error(error_msg: String)
 
 var _current_source_path: String
 var cancel_loading: bool = false
-var logger_level: AseLogger.Level = AseLogger.Level.WARNING
+var logger_level: ASE.Log.Level = ASE.Log.Level.WARNING
 
-func set_logger_level(level: AseLogger.Level) -> void:
+func set_log_level(level: ASE.Log.Level) -> void:
 	logger_level = level
-	AseLogger.set_level(level)
+	ASE.Log.set_level(level)
 
 func _init(path: String = "") -> void:
 	super()
@@ -24,18 +23,18 @@ func _init(path: String = "") -> void:
 		if error == OK:
 			load_ase(path)
 
-func load_ase(path: String) -> Dictionary[Error, AseFile]:
+func load_ase(path: String) -> Dictionary[Error, ASE.File]:
 	if path.is_relative_path() or path.is_absolute_path():
 		var data: PackedByteArray = _safe_read_file(path)
 		if data.is_empty():
-			return {ERR_FILE_CANT_OPEN: AseFile.INVALID}
+			return {ERR_FILE_CANT_OPEN: ASE.File.INVALID}
 		set_data_array(data)
 		_current_source_path = path
 		return {error: parse()}
-	return {ERR_FILE_BAD_PATH: AseFile.INVALID}
+	return {ERR_FILE_BAD_PATH: ASE.File.INVALID}
 
-func parse() -> AseFile:
-	var ase: AseFile = _parse_file_header()
+func parse() -> ASE.File:
+	var ase: ASE.File = _parse_file_header()
 	ase.source_path = _current_source_path
 	if ase.error != OK:
 		return _handle_parse_error(ase, "Failed to parse file header")
@@ -47,28 +46,28 @@ func parse() -> AseFile:
 	ase.set_meta("tileset_registry", tileset_registry)
 	
 	if ase.n_frames > 10000:
-		AseLogger.warning("File has %d frames, may cause memory issues" % ase.n_frames)
+		ASE.Log.warning("File has %d frames, may cause memory issues" % ase.n_frames)
 	
 	_parse_frames(ase, tileset_registry)
 	_resolve_tilemap_cels(ase, tileset_registry)
 	
 	return ase
 
-func parse_chunk_from_data(data: PackedByteArray, chunk_type: int, ase_flags: int = 0, color_depth: int = 4) -> AseChunk:
+func parse_chunk_from_data(data: PackedByteArray, chunk_type: int, ase_flags: int = 0, color_depth: int = 4) -> ASE.Chunk:
 	match chunk_type:
-		AseChunk.ChunkType.LAYER:
-			return AseLayer.new(data, ase_flags)
-		AseChunk.ChunkType.CEL:
-			return AseCel.new(data, color_depth)
-		AseChunk.ChunkType.PALETTE:
-			return AsePalette.new(data)
+		ASE.Chunk.ChunkType.LAYER:
+			return ASE.Layer.new(data, ase_flags)
+		ASE.Chunk.ChunkType.CEL:
+			return ASE.Cel.new(data, color_depth)
+		ASE.Chunk.ChunkType.PALETTE:
+			return ASE.Palette.new(data)
 		_:
-			return AseMissingNo.new(data)
+			return ASE.MissingNo.new(data)
 
 func _safe_read_file(path: String) -> PackedByteArray:
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
-		AseLogger.error("Failed to open file: " + path)
+		ASE.Log.error("Failed to open file: " + path)
 		return PackedByteArray()
 	var data = file.get_buffer(file.get_length())
 	file.close()
@@ -77,27 +76,26 @@ func _safe_read_file(path: String) -> PackedByteArray:
 func _validate_path(path: String) -> void:
 	if not ResourceLoader.exists(path) and not FileAccess.file_exists(path):
 		error = ERR_FILE_NOT_FOUND
-		AseLogger.error("File not found: " + path)
+		ASE.Log.error("File not found: " + path)
 
-func _handle_parse_error(ase: AseFile, msg: String) -> AseFile:
-	AseLogger.error(msg)
-	ase._log("[ERROR] %s" % msg)
+func _handle_parse_error(ase: ASE.File, msg: String) -> ASE.File:
+	ASE.Log.error(msg)
 	ase.error = ERR_PARSE_ERROR
 	return ase
 
-func _parse_file_header() -> AseFile:
-	if get_size() < AseFile.HEADER_SIZE_BYTES:
+func _parse_file_header() -> ASE.File:
+	if get_size() < ASE.File.HEADER_SIZE_BYTES:
 		return _create_error_ase("File too small to be a valid Aseprite file")
 	
 	var file_size = get_DWORD()
 	if file_size != get_size():
-		AseLogger.warning("File size mismatch: header says %d, actual %d" % [file_size, get_size()])
+		ASE.Log.warning("File size mismatch: header says %d, actual %d" % [file_size, get_size()])
 	
 	var magic = get_WORD()
-	if magic != AseFile.MAGIC_NUMBER:
+	if magic != ASE.File.MAGIC_NUMBER:
 		return _create_error_ase("Invalid magic number: expected 0xA5E0, got 0x%X" % magic)
 	
-	var ase = AseFile.new(
+	var ase = ASE.File.new(
 		file_size,
 		magic,
 		get_WORD(),
@@ -113,24 +111,24 @@ func _parse_file_header() -> AseFile:
 	)
 	
 	if ase.sprite_size.x <= 0 or ase.sprite_size.y <= 0:
-		AseLogger.error("Invalid sprite size: " + str(ase.sprite_size))
+		ASE.Log.error("Invalid sprite size: " + str(ase.sprite_size))
 		ase.error = ERR_INVALID_DATA
 	
 	if not _validate_zeroes(84):
-		AseLogger.verbose("Expected 84 reserved zeroed bytes at position %d" % get_position())
+		ASE.Log.verbose("Expected 84 reserved zeroed bytes at position %d" % get_position())
 	
 	return ase
 
-func _create_error_ase(error_msg: String) -> AseFile:
-	var ase = AseFile.new(0, 0, 0, Vector2i.ZERO, AseFile.ColorDepth.RGBA, 0, 0, 0, 0, 0, Vector2i.ONE, Rect2i())
+func _create_error_ase(error_msg: String) -> ASE.File:
+	var ase = ASE.File.new(0, 0, 0, Vector2i.ZERO, ASE.File.ColorDepth.RGBA, 0, 0, 0, 0, 0, Vector2i.ONE, Rect2i())
 	ase.error = ERR_PARSE_ERROR
 	ase._log("[ERROR] %s" % error_msg)
 	return ase
 
-func _parse_frames(ase: AseFile, tileset_registry: Dictionary) -> void:
+func _parse_frames(ase: ASE.File, tileset_registry: Dictionary) -> void:
 	for frame_idx in ase.n_frames:
 		if cancel_loading:
-			AseLogger.warning("Loading cancelled at frame %d" % frame_idx)
+			ASE.Log.warning("Loading cancelled at frame %d" % frame_idx)
 			break
 		
 		emit_signal("load_progress", frame_idx, ase.n_frames)
@@ -141,9 +139,9 @@ func _parse_frames(ase: AseFile, tileset_registry: Dictionary) -> void:
 	
 	emit_signal("load_progress", ase.n_frames, ase.n_frames)
 
-func _get_FRAME(ase: AseFile, tileset_registry: Dictionary) -> AseFrame:
+func _get_FRAME(ase: ASE.File, tileset_registry: Dictionary) -> ASE.Frame:
 	var frame_start = get_position()
-	AseLogger.debug("Parsing frame at 0x%X" % frame_start)
+	ASE.Log.debug("Parsing frame at 0x%X" % frame_start)
 	
 	var frame_size = get_DWORD()
 	var magic = get_WORD()
@@ -152,15 +150,15 @@ func _get_FRAME(ase: AseFile, tileset_registry: Dictionary) -> AseFrame:
 	var zero = get_WORD()
 	var chunks_new = get_DWORD()
 	
-	var frame = AseFrame.new(frame_size, magic, chunks_old, duration, zero, chunks_new)
+	var frame = ASE.Frame.new(frame_size, magic, chunks_old, duration, zero, chunks_new)
 	frame._original_new_chunk_count = chunks_new
 	frame._uses_extended_format = chunks_old == 0xFFFF
 	
 	var chunks = []
 	var last_cel: AseCel = null
-	var last_chunk: AseChunk = null
+	var last_chunk: ASE.Chunk = null
 	var last_tags: AseTags = null
-	var last_tileset: AseTileset = null
+	var last_tileset: ASE.TileSetChunk = null
 	var layer_count: int = 0
 	var current_external_files: AseExternalFiles = null
 	
@@ -168,9 +166,9 @@ func _get_FRAME(ase: AseFile, tileset_registry: Dictionary) -> AseFrame:
 	var pending_tile_user_data: Array[AseUserData] = []
 	
 	for chunk_idx in frame.n_chunks:
-		var chunk: AseChunk = _get_CHUNK(ase)
+		var chunk: ASE.Chunk = _get_CHUNK(ase)
 		if chunk == null:
-			AseLogger.warning("Failed to parse chunk at index %d" % chunk_idx)
+			ASE.Log.warning("Failed to parse chunk at index %d" % chunk_idx)
 			continue
 		
 		chunks.append(chunk)
@@ -183,51 +181,51 @@ func _get_FRAME(ase: AseFile, tileset_registry: Dictionary) -> AseFrame:
 			last_cel = chunk
 		if chunk is AseTags:
 			last_tags = chunk
-		if chunk is AseTileset:
+		if chunk is ASE.TileSetChunk:
 			last_tileset = chunk
-		if chunk is AseExternalFiles:
+		if chunk is ASE.ExternalFiles:
 			current_external_files = chunk
-		if chunk is AseChunk and chunk.error == OK and not (chunk is AseUserData):
+		if chunk is ASE.Chunk and chunk.error == OK and not (chunk is ASE.UserData):
 			last_chunk = chunk
 	
 	_attach_pending_user_data(last_tileset, pending_tile_user_data)
 	frame.set_chunks(chunks)
 	return frame
 
-func _handle_chunk(chunk: AseChunk, ase: AseFile, last_cel: AseCel, last_chunk: AseChunk,
-	last_tags: AseTags, last_tileset: AseTileset, layer_count: int,
+func _handle_chunk(chunk: ASE.Chunk, ase: ASE.File, last_cel: AseCel, last_chunk: ASE.Chunk,
+	last_tags: ASE.FileTags, last_tileset: ASE.Tileset, layer_count: int,
 	pending_tag_user_data: Array, pending_tile_user_data: Array,
 	current_external_files: AseExternalFiles, tileset_registry: Dictionary) -> void:
 	
 	match chunk.chunk_type:
-		AseChunk.ChunkType.LAYER:
-			var layer = chunk as AseLayer
+		ASE.Chunk.ChunkType.LAYER:
+			var layer = chunk as ASE.Layer
 			if layer.error == OK:
 				layer.set_index(layer_count)
 				ase.add_layer(layer, layer_count)
 			else:
-				AseLogger.warning("Layer chunk error: %d" % layer.error)
+				ASE.Log.warning("Layer chunk error: %d" % layer.error)
 		
-		AseChunk.ChunkType.CEL_EXTRA:
+		ASE.Chunk.ChunkType.CEL_EXTRA:
 			if last_cel and last_cel.error == OK:
 				last_cel.extra_data = chunk
 		
-		AseChunk.ChunkType.TILESET:
-			var tileset = chunk as AseTileset
+		ASE.Chunk.ChunkType.TILESET:
+			var tileset = chunk as ASE.TileSetChunk
 			if tileset.error == OK:
 				tileset_registry[tileset.tileset_id] = tileset
 				if tileset.is_external and current_external_files:
 					var base_path = ase.get_meta("source_path", "")
 					tileset.resolve_external_tileset(current_external_files, base_path)
 			else:
-				AseLogger.warning("Tileset chunk error: %d" % tileset.error)
+				ASE.Log.warning("Tileset chunk error: %d" % tileset.error)
 		
-		AseChunk.ChunkType.CEL:
+		ASE.Chunk.ChunkType.CEL:
 			var cel = chunk as AseCel
 			if cel.cel_type == AseCel.CelType.COMPRESSED_TILEMAP and last_tileset and last_tileset.error == OK:
 				cel.set_tileset(last_tileset)
 		
-		AseChunk.ChunkType.USER_DATA:
+		ASE.Chunk.ChunkType.USER_DATA:
 			if last_tags:
 				pending_tag_user_data.append(chunk)
 			elif last_tileset:
@@ -239,20 +237,20 @@ func _handle_chunk(chunk: AseChunk, ase: AseFile, last_cel: AseCel, last_chunk: 
 			elif last_chunk and last_chunk.error == OK:
 				last_chunk.user_data = chunk
 		
-		AseChunk.ChunkType.EXTERNAL_FILES:
+		ASE.Chunk.ChunkType.EXTERNAL_FILES:
 			ase.set_meta("external_files", chunk)
 		
-		AseChunk.ChunkType.TAGS:
+		ASE.Chunk.ChunkType.TAGS:
 			var tags = chunk as AseTags
 			for i in range(min(tags.tags.size(), pending_tag_user_data.size())):
 				tags.tags[i].user_data = pending_tag_user_data[i]
 			pending_tag_user_data.clear()
 
-func _attach_pending_user_data(last_tileset: AseTileset, pending_tile_user_data: Array) -> void:
+func _attach_pending_user_data(last_tileset: ASE.TileSet, pending_tile_user_data: Array) -> void:
 	if not last_tileset or pending_tile_user_data.is_empty():
 		return
 	
-	AseLogger.debug("Attaching %d pending user data entries to tileset" % pending_tile_user_data.size())
+	ASE.Log.debug("Attaching %d pending user data entries to tileset" % pending_tile_user_data.size())
 	
 	if pending_tile_user_data.size() > 0 and last_tileset.user_data == null:
 		last_tileset.user_data = pending_tile_user_data[0]
@@ -262,63 +260,63 @@ func _attach_pending_user_data(last_tileset: AseTileset, pending_tile_user_data:
 		if tile_idx < last_tileset.num_tiles:
 			last_tileset.add_tile_user_data(tile_idx, pending_tile_user_data[i])
 
-func _get_CHUNK(ase: AseFile) -> AseChunk:
+func _get_CHUNK(ase: ASE.File) -> ASE.Chunk:
 	if get_position() >= get_size():
-		AseLogger.error("Unexpected end of file while reading chunk")
+		ASE.Log.error("Unexpected end of file while reading chunk")
 		return null
 	
 	var pos = get_position()
 	
 	if get_size() - pos < 6:
-		AseLogger.error("Not enough data for chunk header")
+		ASE.Log.error("Not enough data for chunk header")
 		return null
 	
 	var chunk_size = get_DWORD()
-	var chunk_type: AseChunk.ChunkType = get_WORD()
+	var chunk_type: ASE.Chunk.ChunkType = get_WORD()
 	
 	if chunk_size < 6 or chunk_size > get_size() - pos:
-		AseLogger.warning("Invalid chunk size: %d at position %d" % [chunk_size, pos])
+		ASE.Log.warning("Invalid chunk size: %d at position %d" % [chunk_size, pos])
 		seek(pos + 6)
 		return null
 	
 	seek(pos)
 	var chunk_data: PackedByteArray = get_BYTES(chunk_size)
-	var chunk: AseChunk = null
+	var chunk: ASE.Chunk = null
 	
 	match chunk_type:
-		AseChunk.ChunkType.OLD_PALETTE_1, AseChunk.ChunkType.OLD_PALETTE_2, AseChunk.ChunkType.PALETTE:
+		ASE.Chunk.ChunkType.OLD_PALETTE_1, ASE.Chunk.ChunkType.OLD_PALETTE_2, ASE.Chunk.ChunkType.PALETTE:
 			chunk = AsePalette.new(chunk_data)
 			if chunk.error == OK and chunk is AsePalette:
 				self.palette = (chunk as AsePalette).colors
 		
-		AseChunk.ChunkType.LAYER:
-			chunk = AseLayer.new(chunk_data, ase.flags)
+		ASE.Chunk.ChunkType.LAYER:
+			chunk = ASE.Layer.new(chunk_data, ase.flags)
 		
-		AseChunk.ChunkType.CEL:
+		ASE.Chunk.ChunkType.CEL:
 			chunk = AseCel.new(chunk_data, ase.color_depth)
 		
-		AseChunk.ChunkType.CEL_EXTRA:
-			chunk = AseCelExtra.new(chunk_data)
+		ASE.Chunk.ChunkType.CEL_EXTRA:
+			chunk = ACE.CelExtra.new(chunk_data)
 		
-		AseChunk.ChunkType.COLOR_PROFILE:
+		ASE.Chunk.ChunkType.COLOR_PROFILE:
 			chunk = AseColorProfile.new(chunk_data)
 		
-		AseChunk.ChunkType.EXTERNAL_FILES:
+		ASE.Chunk.ChunkType.EXTERNAL_FILES:
 			chunk = AseExternalFiles.new(chunk_data)
 		
-		AseChunk.ChunkType.TAGS:
+		ASE.Chunk.ChunkType.TAGS:
 			chunk = AseTags.new(chunk_data)
 		
-		AseChunk.ChunkType.SLICE:
+		ASE.Chunk.ChunkType.SLICE:
 			chunk = AseSlice.new(chunk_data)
 		
-		AseChunk.ChunkType.TILESET:
-			chunk = AseTileset.new(chunk_data)
+		ASE.Chunk.ChunkType.TILESET:
+			chunk = ASE.TileSetChunk.new(chunk_data)
 		
-		AseChunk.ChunkType.USER_DATA:
+		ASE.Chunk.ChunkType.USER_DATA:
 			chunk = AseUserData.new(chunk_data)
 		_:
-			AseLogger.verbose("Unknown chunk type: 0x%X at position %d" % [chunk_type, pos])
+			ASE.Log.verbose("Unknown chunk type: 0x%X at position %d" % [chunk_type, pos])
 			chunk = AseMissingNo.new(chunk_data)
 	
 	if chunk:
@@ -335,7 +333,7 @@ func _validate_zeroes(n_bytes: int) -> bool:
 	var segment = get_BYTES(n_bytes)
 	return segment.count(0) == n_bytes
 
-func _record_frame_offsets(ase: AseFile) -> void:
+func _record_frame_offsets(ase: ASE.File) -> void:
 	var original_pos = get_position()
 	ase._frame_offsets = PackedInt64Array()
 	
@@ -346,7 +344,7 @@ func _record_frame_offsets(ase: AseFile) -> void:
 	
 	seek(original_pos)
 
-func _resolve_tilemap_cels(ase: AseFile, tileset_registry: Dictionary) -> void:
+func _resolve_tilemap_cels(ase: ASE.File, tileset_registry: Dictionary) -> void:
 	
 	for frame in ase.frames:
 		for chunk in frame.chunks:

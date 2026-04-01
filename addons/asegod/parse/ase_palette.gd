@@ -1,10 +1,9 @@
-extends AseChunk
-class_name AsePalette
+extends ASE.Chunk
 
 enum PaletteType { OLD_1 = 0x0004, OLD_2 = 0x0011, NEW = 0x2019 }
 
 var _parse_mode: PaletteType = PaletteType.NEW
-@export_custom(AseFile._H, "", AseFile._U) var preview: Gradient
+@export_custom(ASE.File._H, "", ASE.File._U) var preview: Gradient
 @export var _original_type: PaletteType = PaletteType.NEW
 @export_storage var _original_packets: Array = []
 
@@ -126,11 +125,11 @@ func _parse_new_palette() -> Error:
 	var new_size = _stream.get_DWORD()
 	var from = _stream.get_DWORD()
 	var to = _stream.get_DWORD()
-	AseLogger.debug("Palette: size=%d from=%d to=%d" % [new_size, from, to])
+	ASE.Log.debug("Palette: size=%d from=%d to=%d" % [new_size, from, to])
 	
 	# Validate indices
 	if from >= new_size or to >= new_size:
-		AseLogger.warning("Palette indices out of bounds: from=%d to=%d size=%d" % [from, to, new_size])
+		ASE.Log.warning("Palette indices out of bounds: from=%d to=%d size=%d" % [from, to, new_size])
 		from = clampi(from, 0, new_size - 1)
 		to = clampi(to, from, new_size - 1)
 	
@@ -193,7 +192,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	if error != OK:
 		return {error: PackedByteArray()}
 	
-	var stream = AseDataStream.new()
+	var stream = ASE.DataStream.new()
 	var data = PackedByteArray()
 	stream.data_array = data
 	
@@ -227,7 +226,7 @@ func _serialize_chunk() -> Dictionary[Error, PackedByteArray]:
 	return {OK: stream.get_data_array()}
 
 # Helper methods that take a stream parameter
-func _serialize_old_palette_1_to_stream(stream: AseDataStream) -> void:
+func _serialize_old_palette_1_to_stream(stream: ASE.DataStream) -> void:
 	var packets = _build_old_palette_packets(4)
 	stream.put_WORD(packets.size())
 	for packet in packets:
@@ -238,7 +237,7 @@ func _serialize_old_palette_1_to_stream(stream: AseDataStream) -> void:
 			stream.put_BYTE(int(color.g8))
 			stream.put_BYTE(int(color.b8))
 
-func _serialize_old_palette_2_to_stream(stream: AseDataStream) -> void:
+func _serialize_old_palette_2_to_stream(stream: ASE.DataStream) -> void:
 	var packets = _build_old_palette_packets(6)
 	stream.put_WORD(packets.size())
 	for packet in packets:
@@ -249,8 +248,8 @@ func _serialize_old_palette_2_to_stream(stream: AseDataStream) -> void:
 			stream.put_BYTE(int(color.g8 / 4))
 			stream.put_BYTE(int(color.b8 / 4))
 
-func _serialize_new_palette_to_stream(stream: AseDataStream) -> void:
-	#AseLogger.debug("Serializing palette: colors.size=", colors.size(), " _original_from=", _original_from, " _original_to=", _original_to)
+func _serialize_new_palette_to_stream(stream: ASE.DataStream) -> void:
+	#ASE.Log.debug("Serializing palette: colors.size=", colors.size(), " _original_from=", _original_from, " _original_to=", _original_to)
 	stream.put_DWORD(colors.size())
 	stream.put_DWORD(_original_from)
 	var end_index = _original_to if _original_to >= 0 else colors.size() - 1

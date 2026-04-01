@@ -13,10 +13,10 @@ func _exit_tree():
 
 
 func _handles(object):
-	return object is AseFile
+	return object is ASE.File
 
 func _edit(object):
-	if not object is AseFile:
+	if not object is ASE.File:
 		return
 	
 	var path = object.resource_path

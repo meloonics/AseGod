@@ -14,7 +14,7 @@ func _get_save_extension():
 	return "tres"
 
 func _get_resource_type():
-	return "AseFile"
+	return "ASE.File"
 
 func _get_import_options(path, preset_index):
 	return []
@@ -26,9 +26,9 @@ func _get_preset_name(preset_index):
 	return "Default"
 
 func _import(source_file, save_path, options, platform_variants, gen_files):
-	AseLogger.debug("Importing: " + str(source_file))
+	ASE.Log.debug("Importing: " + str(source_file))
 	
-	var parser = AseParser.new()
+	var parser = ASE.Parser.new()
 	var result = parser.load_ase(source_file)
 	
 	if result.keys()[0] != OK:
@@ -42,13 +42,13 @@ func _import(source_file, save_path, options, platform_variants, gen_files):
 	var err = ResourceSaver.save(ase_file, save_file)
 	
 	if err != OK:
-		AseLogger.error("Save failed: " + str(err))
+		ASE.Log.error("Save failed: " + str(err))
 		return err
 	
 	var data_path = save_path + ".ase_data.tres"
 	err = ResourceSaver.save(ase_file, data_path)
 	if err == OK:
 		gen_files.append(data_path)
-		AseLogger.debug("Data saved to: " + data_path)
+		ASE.Log.debug("Data saved to: " + data_path)
 	
 	return OK
